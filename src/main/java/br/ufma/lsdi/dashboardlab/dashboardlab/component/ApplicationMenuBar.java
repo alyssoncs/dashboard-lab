@@ -14,7 +14,7 @@ public class ApplicationMenuBar extends MenuBar {
         resourcesMenuItem.addItem("Home", null, c -> {
             contentPanel.setContent(new IndexView(interSCityService, indexUI));
         });
-        resourcesMenuItem.addItem("Commom Queries", null, c -> {
+        resourcesMenuItem.addItem("Stats", null, c -> {
             contentPanel.setContent(new CommonQueriesView(interSCityService, indexUI));
         });
         resourcesMenuItem.addItem("Map", null, c -> {
