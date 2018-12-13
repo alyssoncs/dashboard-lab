@@ -4,6 +4,7 @@ import br.ufma.lsdi.dashboardlab.dashboardlab.chart.PieChart;
 import br.ufma.lsdi.dashboardlab.dashboardlab.chart.VerticalBarChart;
 import br.ufma.lsdi.dashboardlab.dashboardlab.model.SearchResourcesRequest;
 import br.ufma.lsdi.dashboardlab.dashboardlab.service.InterSCityService;
+import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.ui.*;
 import io.vavr.control.Option;
@@ -11,6 +12,8 @@ import lombok.val;
 import org.vaadin.addon.leaflet.LMap;
 import org.vaadin.addon.leaflet.LOpenStreetMapLayer;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
@@ -20,6 +23,7 @@ public class CommonQueriesView extends VerticalLayout {
 
     private final InterSCityService interSCityService;
 
+    VerticalLayout generalInfo;
     VerticalLayout capPerTypeLayout;
     VerticalLayout resPerCapLayout;
     VerticalLayout resPerCapTypeLayout;
@@ -32,16 +36,19 @@ public class CommonQueriesView extends VerticalLayout {
 
         this.interSCityService = interSCityService;
 
+        generalInfo = new VerticalLayout();
+        generalInfo.setSpacing(false);
+        generalInfo.setMargin(false);
+        generalInfo.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
+
         capPerTypeLayout = new VerticalLayout();
         capPerTypeLayout.setSpacing(false);
         capPerTypeLayout.setMargin(false);
-        //capPerTypeLayout.setSizeFull();
         capPerTypeLayout.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
 
         resPerCapLayout = new VerticalLayout();
         resPerCapLayout.setSpacing(false);
         resPerCapLayout.setMargin(false);
-        //resPerCapLayout.setSizeFull();
         resPerCapLayout.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
 
         resPerCapTypeLayout = new VerticalLayout();
@@ -50,14 +57,17 @@ public class CommonQueriesView extends VerticalLayout {
         //resPerCapTypeLayout.setSizeFull();
         resPerCapTypeLayout.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
 
+
         VerticalLayout formLayout = createFormPanel();
 
 
         GridLayout statsGrid = new GridLayout(2,2);
         statsGrid.setSizeFull();
-        statsGrid.addComponent(capPerTypeLayout);
-        statsGrid.addComponent(resPerCapLayout);
-        statsGrid.addComponent(formLayout);
+        statsGrid.setSpacing(true);
+        statsGrid.addComponent(generalInfo, 0, 0);
+        statsGrid.addComponent(capPerTypeLayout, 0, 1);
+        statsGrid.addComponent(resPerCapLayout, 1, 0);
+        //statsGrid.addComponent(formLayout, 1, 1);
         //statsGrid.addComponent(resPerCapTypeLayout);
 
         map = new LMap();
@@ -90,6 +100,8 @@ public class CommonQueriesView extends VerticalLayout {
     }
 
     private void initCharts() {
+        initText();
+
         plotCapabilitiesPerTypeChart();
 
         val capabilities = interSCityService.getAllCapabilities(Option.none()).stream()
@@ -194,6 +206,61 @@ public class CommonQueriesView extends VerticalLayout {
         return vl;
     }
 
+    private void initText() { ;
+        VerticalLayout city = new VerticalLayout();
+        city.setDefaultComponentAlignment(Alignment.MIDDLE_LEFT);
+        city.addComponent(new Label("<div align=\"left\"> <font size=\"7\"> <b> Cidade de São Luís </b> </font> </div>", ContentMode.HTML));
+
+
+        DateTimeFormatter dtfDate = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        DateTimeFormatter dtfTime = DateTimeFormatter.ofPattern("HH:mm");
+        LocalDateTime now = LocalDateTime.now();
+
+        Label date1 = new Label("<div align=\"center\"> <font size=\"5\"> <b>" + dtfDate.format(now) + "</b> </font> </div>", ContentMode.HTML);
+        Label date2 = new Label("<div align=\"center\"> <font size=\"5\"> <b>" + dtfTime.format(now) + "</b> </font></div>", ContentMode.HTML);
+
+        HorizontalLayout date = new HorizontalLayout();
+        date.addComponentsAndExpand(date1, date2);
+
+
+        Label resourceLabel = new Label(
+                "<div align=\"center\"> <font size=\"20\"> <b>" +
+                            "266" +
+                            //interSCityService.getAllResources().size() +
+                        "</b> </font> </div>" +
+                        "<div align=\"center\"> <font size=\"6\"> <b>" +
+                            "Resources" +
+                        "</b> </font> </div>"
+                , ContentMode.HTML
+        );
+
+        Label capabilitiesLabel = new Label(
+                "<div align=\"center\"> <font size=\"40\"> <b>" +
+                            "5355" +
+                            //interSCityService.getAllCapabilities(Option.none()).size() +
+                        "</b> </font> </div>" +
+                        "<div align=\"center\"> <font size=\"6\"> <b>" +
+                            "Capabilities" +
+                        "</b> </font> </div>"
+                , ContentMode.HTML
+        );
+
+
+        HorizontalLayout resourcesAndCapabilitiesLabel = new HorizontalLayout();
+        resourcesAndCapabilitiesLabel.addComponentsAndExpand(resourceLabel, capabilitiesLabel);
+
+        VerticalLayout verticalLayout = new VerticalLayout();
+        verticalLayout.addComponent(city);
+        verticalLayout.addComponent(date);
+        verticalLayout.addComponent(resourcesAndCapabilitiesLabel);
+
+        Panel panel = new Panel("General information".toUpperCase());
+        panel.setContent(verticalLayout);
+        panel.setHeight("100%");
+
+        generalInfo.addComponent(panel);
+    }
+
     private void plotResourcesPerCapabilityChart(Set<String> capabilities) {
 
         ProgressBar spinner = new ProgressBar();
@@ -201,7 +268,7 @@ public class CommonQueriesView extends VerticalLayout {
         resPerCapLayout.addComponent(spinner);
 
         val chart = new VerticalBarChart();
-        chart.setTitle("Resources per capability".toUpperCase());
+        //chart.setTitle("Resources per capability".toUpperCase());
 
         capabilities.stream().forEach(cap -> {
             val request = new SearchResourcesRequest();
@@ -210,8 +277,12 @@ public class CommonQueriesView extends VerticalLayout {
             resources.stream().forEach(res -> chart.addData("Resources", cap, (double) resources.size()));
         });
 
+        Panel panel = new Panel("Resources per capability".toUpperCase());
+        panel.setContent(chart.getChart());
+        panel.setHeight("100%");
+
         resPerCapLayout.removeAllComponents();
-        resPerCapLayout.addComponent(chart.getChart());
+        resPerCapLayout.addComponent(panel);
     }
 
     private void plotResourcesPerCapabilityTypeChart() {
@@ -242,12 +313,18 @@ public class CommonQueriesView extends VerticalLayout {
         int actuators = interSCityService.getAllCapabilities(Option.of("actuator")).size();
 
         PieChart pieChart = new PieChart();
-        pieChart.setTitle("Capabilities per type".toUpperCase());
+        //pieChart.setTitle("Capabilities per type".toUpperCase());
         pieChart.addData("Sensors", (double) sensors);
         pieChart.addData("Actuators", (double) actuators);
 
+        Panel panel = new Panel("Capabilities per type".toUpperCase());
+        //panel.setSizeUndefined();
+        panel.setContent(pieChart.getChart());
+        panel.setHeight("100%");
+
+
         capPerTypeLayout.removeAllComponents();
-        capPerTypeLayout.addComponent(pieChart.getChart());
+        capPerTypeLayout.addComponent(panel);
 
     }
 
